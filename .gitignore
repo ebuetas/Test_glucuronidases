@@ -1,0 +1,9 @@
+#Ignorar datos y resultados pesados
+data/
+results/
+
+#Ignorar archivos ocultos del sistema o entornos
+.ipynb_checkpoints/
+.DS_Store
+
+
