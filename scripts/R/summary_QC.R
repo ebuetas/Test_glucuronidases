@@ -34,7 +34,7 @@ QC_TRIMMED <- file.path(RESULTS_DIR, "fastqc_trimmed")
 QC_FINAL <- file.path(RESULTS_DIR, "fastqc_nonhuman")
 
 OUTPUT_FILE <- file.path(
-  RESULTS_DIR,
+ PROJECT_DIR,"results",
   "QC_summary.tsv"
 )
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=QC_HostRemoval
-#SBATCH --output=QC_%A_%a.out
-#SBATCH --error=QC_%A_%a.err
+#SBATCH --output=/data/home/molivares/elena/glucuronidases/logs/QC_%A_%a.out
+#SBATCH --error=/data/home/molivares/elena/glucuronidases/logs/QC_%A_%a.err
 #SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=8
 
@@ -32,7 +32,7 @@ METADATA="${PROJECT_DIR}/data/samples.tsv"
 # Índice humano construido en el trabajo anterior
 HUMAN_INDEX="/data/home/molivares/references/human/GRCh38_Ensembl116/bowtie2_index/GRCh38"
 
-RESULTS="${PROJECT_DIR}/processed"
+RESULTS="${PROJECT_DIR}/data/processed"
 
 QC_RAW="${RESULTS}/fastqc_raw"
 TRIMMED="${RESULTS}/trimmed"
@@ -108,7 +108,7 @@ echo "========================================"
 # ============================================================
 
 TRIMMED1="${TRIMMED}/${SAMPLE}.trimmed.fastq.gz"
-NONHUMAN1="${NONHUMAN}/${SAMPLE}.nonhuman.fastq.gz"
+NONHUMAN1="${NON_HUMAN}/${SAMPLE}.nonhuman.fastq.gz"
 
 TRIM_LOG="${LOG_DIR}/${SAMPLE}_trimmomatic.log"
 BOWTIE_LOG="${LOG_DIR}/${SAMPLE}_bowtie2.log"
