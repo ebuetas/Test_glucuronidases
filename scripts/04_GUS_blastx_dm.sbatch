@@ -4,7 +4,7 @@
 #SBATCH --error=/data/home/molivares/elena/glucuronidases/logs/GUS_%A_%a.err
 #SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=8
-#SBATCH --array=1-1
+#SBATCH --array=1-48%4
 
 set -euo pipefail
 
@@ -17,6 +17,7 @@ PROJECT_DIR="/data/home/molivares/elena/glucuronidases"
 METADATA="${PROJECT_DIR}/data/samples.tsv"
 
 INPUT_DIR="${PROJECT_DIR}/data/processed/non_human"
+FASTA_DIR="${PROJECT_DIR}/data/processed/non_human/fasta"
 
 DB_PREFIX="${PROJECT_DIR}/data/references/diamond_db/HMGC279"
 
@@ -81,42 +82,85 @@ if [[ ! -s "${INPUT_FASTQ}" ]]; then
     exit 1
 fi
 
-# --------------------------------------------------
-# OUTPUT
-# --------------------------------------------------
 
-OUTPUT="${RESULTS}/${SAMPLE}_GUS_hits.tsv"
-SAMPLE_TMP="${TMP_DIR}/${SAMPLE}"
 
-mkdir -p "${SAMPLE_TMP}"
 
-echo "----------------------------------------"
-echo "Sample: ${SAMPLE}"
-echo "Input: ${INPUT_FASTQ}"
-echo "Output: ${OUTPUT}"
-echo "----------------------------------------"
 
-# --------------------------------------------------
-# DIAMOND BLASTX
-# --------------------------------------------------
+# ============================================================
+# 4. CONVERTIR FASTQ.GZ A FASTA
+# ============================================================
+
+OUTPUT_FASTA="${FASTA_DIR}/${SAMPLE}.nonhuman.fasta"
+
+echo "Converting FASTQ.GZ to FASTA..."
+
+if [[ ! -s "${OUTPUT_FASTA}" ]]; then
+
+    TEMP_FASTA="${OUTPUT_FASTA}.tmp"
+    # Cada lectura FASTQ ocupa cuatro líneas:
+    # 1: identificador (@)
+    # 2: secuencia
+    # 3: separador (+)
+    # 4: calidad
+    #
+    # Conservamos identificador y secuencia.
+
+    zcat "${INPUT_FASTQ}" | awk '
+    NR%4==1 {
+        print ">" substr($0,2)
+    }
+    NR%4==2 {
+        print
+    }
+    ' > "${TEMP_FASTA}"
+
+    if [[ ! -s "${TEMP_FASTA}" ]]; then
+        echo "ERROR: FASTA conversion failed for ${SAMPLE}"
+        rm -f "${TEMP_FASTA}"
+        exit 1
+    fi
+
+    mv "${TEMP_FASTA}" "${OUTPUT_FASTA}"
+
+else
+    echo "FASTA already exists. Skipping conversion."
+fi
+
+echo "FASTA generated: ${OUTPUT_FASTA}"
+
+# ============================================================
+# 5. EJECUTAR DIAMOND BLASTX
+# ============================================================
+
+OUTPUT_TSV="${RESULTS}/${SAMPLE}.GUS.tsv"
+
+echo "Running DIAMOND blastx..."
 
 diamond blastx \
-    --query "${INPUT_FASTQ}" \
+    --query "${OUTPUT_FASTA}" \
     --db "${DB_PREFIX}" \
-    --out "${OUTPUT}" \
+    --out "${OUTPUT_TSV}" \
     --outfmt 6 qseqid sseqid pident length qstart qend sstart send evalue bitscore qlen slen \
     --sensitive \
     --evalue 1e-5 \
     --max-target-seqs 25 \
-    --threads "${THREADS}" \
-    --tmpdir "${SAMPLE_TMP}"
+    --threads "${THREADS}"
 
-echo "Finished sample: ${SAMPLE}"
+echo "DIAMOND finished for ${SAMPLE}"
 
-echo "Number of alignment records:"
-wc -l "${OUTPUT}"
+# ============================================================
+# 6. RESUMEN
+# ============================================================
 
-echo "Output file:"
-ls -lh "${OUTPUT}"
+N_READS=$(grep -c "^>" "${OUTPUT_FASTA}" || true)
+N_HITS=$(wc -l < "${OUTPUT_TSV}")
 
-echo "Finished successfully."
+echo "=========================================="
+echo "RESULTS: ${SAMPLE}"
+echo "Reads processed: ${N_READS}"
+echo "GUS alignments: ${N_HITS}"
+echo "Output: ${OUTPUT_TSV}"
+echo "Finished: $(date)"
+echo "=========================================="
+
+

@@ -25,7 +25,7 @@ LOG_DIR <- file.path(
 )
 
 RESULTS_DIR <- file.path(
-  PROJECT_DIR,
+  PROJECT_DIR,"data",
   "processed"
 )
 
