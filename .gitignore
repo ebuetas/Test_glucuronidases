@@ -2,6 +2,7 @@
 data/
 results/
 processed/
+statistical_analysis
 #Ignorar archivos ocultos del sistema o entornos
 .ipynb_checkpoints/
 .DS_Store
