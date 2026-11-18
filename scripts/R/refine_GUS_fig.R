@@ -155,7 +155,7 @@ required_clinical <- c(
 
 required_gus_metadata <- c(
   "new_id",
-  "gus_type"
+  "gus_type", "organism"
 )
 
 if (!all(required_prev %in% colnames(prevalence))) {
@@ -189,6 +189,9 @@ gus_metadata$new_id <- trimws(
 gus_metadata$gus_type <- trimws(
   as.character(gus_metadata$gus_type)
 )
+gus_metadata$organism <- trimws(
+  as.character(gus_metadata$organism)
+)
 
 if (anyDuplicated(gus_metadata$new_id)) {
   stop("Duplicated GUS identifiers in GUS_metadata.tsv.")
@@ -199,6 +202,11 @@ class_mapping <- setNames(
   gus_metadata$new_id
 )
 
+
+organism_mapping <- setNames(
+  gus_metadata$organism,
+  gus_metadata$new_id
+)
 # ------------------------------------------------------------
 # 5. Prepare clinical metadata
 # ------------------------------------------------------------
@@ -567,13 +575,22 @@ if (number_selected == 0) {
 
     for (i in current_indices) {
 
-      gus_name <- selected_gus[i]
+    gus_name <- selected_gus[i]
 
-      gus_class <- unname(class_mapping[gus_name])
+gus_class <- unname(class_mapping[gus_name])
+organism_name <- unname(organism_mapping[gus_name])
 
-      if (is.na(gus_class) || length(gus_class) == 0) {
-        gus_class <- "Unknown"
-      }
+if (is.na(gus_class) || length(gus_class) == 0) {
+  gus_class <- "Unknown"
+}
+
+if (is.na(organism_name) ||
+    length(organism_name) == 0 ||
+    organism_name == "") {
+  organism_name <- gus_name
+}
+
+
 
       values <- abundance_matrix[i, ]
 
@@ -588,14 +605,14 @@ if (number_selected == 0) {
       boxplot(
         plot_data,
         main = paste0(
-          gus_name,
-          " (",
-          gus_class,
-          ")\n",
-          "p = ",
-          format.pval(raw_p, digits = 3, eps = 0.001),
-          " | FDR = ",
-          format.pval(fdr, digits = 3, eps = 0.001)
+  organism_name,
+  " (",
+  gus_class,
+  ")\n",
+  "p = ",
+  format.pval(raw_p, digits = 3, eps = 0.001),
+  " | FDR = ",
+  format.pval(fdr, digits = 3, eps = 0.001)
         ),
         ylab = "Relative abundance (%)",
         xlab = "",
